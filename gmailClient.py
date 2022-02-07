@@ -1,6 +1,6 @@
 #!./venv/bin/ python3
 from __future__ import print_function
-
+import json
 import os.path
 
 from google.auth.transport.requests import Request
@@ -38,12 +38,21 @@ def main():
     try:
         # Call the Gmail API
         service = build('gmail', 'v1', credentials=creds)    
-          
+        
+        # Grabs email id from inbox
         results = service.users().messages().list(userId='me', labelIds="INBOX", maxResults=10).execute()
         
         emails = results.get('messages', [])
+        results = []
         for email in emails:
-            print(email['id'])
+            results.append(service.users().messages().get(userId='me', id=email['id']).execute())
+            
+        # print(json.dumps(results[0], indent=4))
+            
+        for result in results:
+            for header in result.get("payload", []).get("headers", []):
+                if header["name"] == "Subject":
+                    print(header["value"])
         service.close()
 
     except HttpError as error:
